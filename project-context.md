@@ -29,8 +29,8 @@
 | 2.2 | Edge-Case, Type Coverage, and Adversarial Tests              | ✅ DONE           |
 | 3.1 | Extend `benchmark_numbers.cpp` with Timsort Column          | ✅ DONE           |
 | 3.2 | Extend `benchmark_strings.cpp` with Timsort Column          | ✅ DONE           |
-| 4.1 | README Algorithm Table Entry                                 | ⏳ NOT YET CREATED |
-| 4.2 | Standalone Usage Example                                     | ⏳ NOT YET CREATED |
+| 4.1 | README Algorithm Table Entry                                 | ✅ DONE            |
+| 4.2 | Standalone Usage Example                                     | ✅ DONE            |
 
 **Epic 4 artifact files** do not exist yet and must be created before development starts.
 
