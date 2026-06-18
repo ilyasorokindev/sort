@@ -40,6 +40,11 @@ project : requirements
                 cxx11_constexpr
                 cxx11_noexcept ] <optimization>speed : test_spinsort ]
 
+  [ run test_timsort.cpp
+       : : : [ requires
+                cxx11_constexpr
+                cxx11_noexcept ] <optimization>speed : test_timsort ]
+
   [ run test_insert_sort.cpp
        : : : [ requires
                 cxx11_constexpr

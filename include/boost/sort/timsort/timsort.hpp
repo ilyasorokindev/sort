@@ -344,8 +344,9 @@ void merge_hi(
     // Gallop phase (mirrored)
     do {
       iter_diff_t<Iter> k;
-      // How many left-run elements are >= *buf (gallop from right end of left run)
-      k = len1 - gallop_left<Iter, Compare>(*buf, base1, len1, len1 - 1, comp);
+      // How many left-run elements are strictly > *buf (gallop from right end of left run).
+      // Must use gallop_right (not gallop_left) to exclude equal elements and preserve stability.
+      k = len1 - gallop_right<Iter, Compare>(*buf, base1, len1, len1 - 1, comp);
       for (iter_diff_t<Iter> i = 0; i < k; ++i)
         *dest-- = std::move_if_noexcept(*left--);
       len1 -= k; left_wins = k;
@@ -354,10 +355,13 @@ void merge_hi(
       *dest-- = std::move_if_noexcept(*buf--);
       if (--len2 == 0) goto merge_hi_done;
 
-      // How many right-run (buffer) elements are > *left
-      // buf - (len2-1) is the start of remaining buffer elements; use BufIter
+      // How many right-run (buffer) elements are >= *left.
+      // Must use gallop_left (not gallop_right) to include equal elements: in the
+      // right-to-left merge, equal buffer (right-run) elements must be placed to the
+      // RIGHT of equal left-run elements, which means they must be placed at higher
+      // dest values (placed first), so they belong in this gallop batch.
       BufIter buf_base = buf - (len2 - 1);
-      k = len2 - gallop_right<BufIter, Compare>(*left, buf_base, len2, len2 - 1, comp);
+      k = len2 - gallop_left<BufIter, Compare>(*left, buf_base, len2, len2 - 1, comp);
       for (iter_diff_t<Iter> i = 0; i < k; ++i)
         *dest-- = std::move_if_noexcept(*buf--);
       len2 -= k; right_wins = k;
