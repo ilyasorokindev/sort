@@ -20,6 +20,7 @@ Detailed [boost API documentation](https://www.boost.org/doc/libs/release/libs/s
   | pdqsort           |  no   |      Log N                 | N, N LogN, N LogN             | Comparison operator |
   | spinsort          |  yes  |      N / 2                 | N, N LogN, N LogN             | Comparison operator |
   | flat_stable_sort  |  yes  |size of the data / 256 + 8K | N, N LogN, N LogN             | Comparison operator |
+  | timsort           |  yes  |      N / 2                 | N, N LogN, N LogN             | Comparison operator |
 
 
 - **spreadsort** is a [novel hybrid radix sort algorithm](https://en.wikipedia.org/wiki/Spreadsort), extremely fast, designed and developed by Steven Ross.
