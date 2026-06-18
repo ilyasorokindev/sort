@@ -30,6 +30,7 @@
 #include <boost/sort/sort.hpp>
 
 #define NELEM 100000000
+const int NELEM_TIM = 1000000;
 
 using namespace std;
 namespace bsort = boost::sort;
@@ -45,6 +46,7 @@ using bsort::spinsort;
 using bsort::flat_stable_sort;
 using bsort::spreadsort::spreadsort;
 using bsort::pdqsort;
+using bsort::timsort;
 
 void Generator_random (void);
 void Generator_sorted (void);
@@ -55,9 +57,13 @@ void Generator_reverse_sorted_end (uint64_t n_last);
 void Generator_reverse_sorted_middle (uint64_t n_middle);
 
 void Test (const std::vector <uint64_t> &B);
+void RunTimsortBenchmark();
+void TestTimsort(const std::vector<int>& B);
 
 int main (int argc, char *argv[])
 {
+    RunTimsortBenchmark();
+
     cout << "\n\n";
     cout << "************************************************************\n";
     cout << "**                                                        **\n";
@@ -315,8 +321,128 @@ void Test (const std::vector <uint64_t> &B)
     //-----------------------------------------------------------------------
     std::cout<<std::setprecision (2) <<std::fixed;
     for ( uint32_t i =0 ; i < V.size () ; ++i)
-    {   
+    {
         std::cout<<std::right<<std::setw (5)<<V [i]<<" |";
     };
     std::cout<<std::endl;
 };
+void TestTimsort(const std::vector<int>& B)
+{
+    std::less<int> comp;
+    double duration;
+    time_point start, finish;
+    std::vector<int> A;
+    std::vector<double> V;
+
+    A = B;
+    start = now();
+    timsort(A.begin(), A.end(), comp);
+    finish = now();
+    duration = subtract_time(finish, start);
+    V.push_back(duration);
+
+    A = B;
+    start = now();
+    spinsort(A.begin(), A.end(), comp);
+    finish = now();
+    duration = subtract_time(finish, start);
+    V.push_back(duration);
+
+    A = B;
+    start = now();
+    flat_stable_sort(A.begin(), A.end(), comp);
+    finish = now();
+    duration = subtract_time(finish, start);
+    V.push_back(duration);
+
+    A = B;
+    start = now();
+    stable_sort(A.begin(), A.end(), comp);
+    finish = now();
+    duration = subtract_time(finish, start);
+    V.push_back(duration);
+
+    cout << std::setprecision(2) << std::fixed;
+    for (uint32_t i = 0; i < V.size(); ++i)
+        cout << std::right << std::setw(5) << V[i] << " |";
+    cout << endl;
+}
+void RunTimsortBenchmark()
+{
+    cout << "\n";
+    cout << "************************************************************\n";
+    cout << "**                                                        **\n";
+    cout << "**   Timsort vs. Stable-Sort Algorithms (N=1M, int)       **\n";
+    cout << "**   timsort | spinsort | flat_stable_sort | stable_sort  **\n";
+    cout << "**                                                        **\n";
+    cout << "************************************************************\n";
+    cout << endl;
+    cout << "[ 1 ] timsort  [ 2 ] spinsort  [ 3 ] flat_stable_sort  [ 4 ] std::stable_sort\n\n";
+    cout << "                    |      |      |      |      |\n";
+    cout << "                    | [ 1 ]| [ 2 ]| [ 3 ]| [ 4 ]|\n";
+    cout << "--------------------+------+------+------+------+\n";
+
+    // random
+    {
+        vector<int> A;
+        A.reserve(NELEM_TIM);
+        std::mt19937 rng(123);
+        for (int i = 0; i < NELEM_TIM; ++i)
+            A.push_back(static_cast<int>(rng() % NELEM_TIM));
+        cout << "random              |";
+        TestTimsort(A);
+    }
+
+    // already-sorted
+    {
+        vector<int> A;
+        A.reserve(NELEM_TIM);
+        for (int i = 0; i < NELEM_TIM; ++i)
+            A.push_back(i);
+        cout << "already-sorted      |";
+        TestTimsort(A);
+    }
+
+    // reverse-sorted
+    {
+        vector<int> A;
+        A.reserve(NELEM_TIM);
+        for (int i = NELEM_TIM; i > 0; --i)
+            A.push_back(i);
+        cout << "reverse-sorted      |";
+        TestTimsort(A);
+    }
+
+    // Nearly-sorted: sorted array, N*0.05 random adjacent swaps, mt19937(42)
+    {
+        vector<int> A;
+        A.reserve(NELEM_TIM);
+        for (int i = 0; i < NELEM_TIM; ++i)
+            A.push_back(i);
+        std::mt19937 rng(42);
+        const int nswaps = static_cast<int>(NELEM_TIM * 0.05);
+        for (int s = 0; s < nswaps; ++s) {
+            int idx = static_cast<int>(rng() % (NELEM_TIM - 1));
+            std::swap(A[idx], A[idx + 1]);
+        }
+        cout << "nearly-sorted       |";
+        TestTimsort(A);
+        // NOTE: SM-1 target (>=2x vs spinsort on nearly-sorted) not met — calibration issue
+    }
+
+    // pipe-organ: ascending first half, descending second half
+    {
+        vector<int> A;
+        A.reserve(NELEM_TIM);
+        const int half = NELEM_TIM / 2;
+        for (int i = 0; i < half; ++i)
+            A.push_back(i);
+        for (int i = half - 1; i >= 0; --i)
+            A.push_back(i);
+        cout << "pipe-organ          |";
+        TestTimsort(A);
+    }
+
+    cout << "--------------------+------+------+------+------+\n";
+    cout << endl;
+}
