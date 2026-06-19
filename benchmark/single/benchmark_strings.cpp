@@ -30,6 +30,7 @@
 
 
 #define NMAXSTRING 10000000
+const int NELEM_STR = 100000;
 
 using namespace std;
 namespace bsort = boost::sort;
@@ -45,6 +46,7 @@ using bsort::spinsort;
 using bsort::flat_stable_sort;
 using bsort::spreadsort::spreadsort;
 using bsort::pdqsort;
+using bsort::timsort;
 
 void Generator_random (void);
 void Generator_sorted (void);
@@ -55,10 +57,14 @@ void Generator_reverse_sorted_end (size_t n_last);
 void Generator_reverse_sorted_middle (size_t n_last);
 
 int Test (std::vector <std::string> &B);
+void RunTimsortStringBenchmark();
+void TestTimsortStr(const std::vector<std::string>& B);
 
 
 int main (int argc, char *argv [])
 {
+    RunTimsortStringBenchmark();
+
     cout << "\n\n";
     cout << "************************************************************\n";
     cout << "**                                                        **\n";
@@ -343,4 +349,158 @@ int Test (std::vector <std::string> &B)
     std::cout <<std::endl;
     return 0;
 };
+void TestTimsortStr(const std::vector<std::string>& B)
+{
+    std::less<std::string> comp;
+    double duration;
+    time_point start, finish;
+    std::vector<std::string> A;
+    std::vector<double> V;
+
+    A = B;
+    start = now();
+    timsort(A.begin(), A.end(), comp);
+    finish = now();
+    duration = subtract_time(finish, start);
+    V.push_back(duration);
+
+    A = B;
+    start = now();
+    spinsort(A.begin(), A.end(), comp);
+    finish = now();
+    duration = subtract_time(finish, start);
+    V.push_back(duration);
+
+    A = B;
+    start = now();
+    flat_stable_sort(A.begin(), A.end(), comp);
+    finish = now();
+    duration = subtract_time(finish, start);
+    V.push_back(duration);
+
+    A = B;
+    start = now();
+    stable_sort(A.begin(), A.end(), comp);
+    finish = now();
+    duration = subtract_time(finish, start);
+    V.push_back(duration);
+
+    cout << std::setprecision(2) << std::fixed;
+    for (uint32_t i = 0; i < V.size(); ++i)
+        cout << std::right << std::setw(5) << V[i] << " |";
+    cout << endl;
+}
+void RunTimsortStringBenchmark()
+{
+    cout << "\n";
+    cout << "************************************************************\n";
+    cout << "**                                                        **\n";
+    cout << "**  Timsort vs. Stable-Sort Algorithms (N=100K, string)   **\n";
+    cout << "**   timsort | spinsort | flat_stable_sort | stable_sort  **\n";
+    cout << "**                                                        **\n";
+    cout << "************************************************************\n";
+    cout << endl;
+    cout << "[ 1 ] timsort  [ 2 ] spinsort  [ 3 ] flat_stable_sort  [ 4 ] std::stable_sort\n\n";
+    cout << "                    |      |      |      |      |\n";
+    cout << "                    | [ 1 ]| [ 2 ]| [ 3 ]| [ 4 ]|\n";
+    cout << "--------------------+------+------+------+------+\n";
+
+    const char charset[] = "abcdefghijklmnopqrstuvwxyz";
+
+    // random
+    {
+        vector<std::string> A;
+        A.reserve(NELEM_STR);
+        std::mt19937 rng(123);
+        for (int i = 0; i < NELEM_STR; ++i) {
+            std::string s(8, ' ');
+            for (int j = 0; j < 8; ++j)
+                s[j] = charset[rng() % 26];
+            A.push_back(s);
+        }
+        cout << "random              |";
+        TestTimsortStr(A);
+    }
+
+    // already-sorted
+    {
+        vector<std::string> A;
+        A.reserve(NELEM_STR);
+        std::mt19937 rng(123);
+        for (int i = 0; i < NELEM_STR; ++i) {
+            std::string s(8, ' ');
+            for (int j = 0; j < 8; ++j)
+                s[j] = charset[rng() % 26];
+            A.push_back(s);
+        }
+        std::sort(A.begin(), A.end());
+        cout << "already-sorted      |";
+        TestTimsortStr(A);
+    }
+
+    // reverse-sorted
+    {
+        vector<std::string> A;
+        A.reserve(NELEM_STR);
+        std::mt19937 rng(123);
+        for (int i = 0; i < NELEM_STR; ++i) {
+            std::string s(8, ' ');
+            for (int j = 0; j < 8; ++j)
+                s[j] = charset[rng() % 26];
+            A.push_back(s);
+        }
+        std::sort(A.begin(), A.end());
+        std::reverse(A.begin(), A.end());
+        cout << "reverse-sorted      |";
+        TestTimsortStr(A);
+    }
+
+    // Nearly-sorted: sorted array, N*0.05 random adjacent swaps, mt19937(42)
+    {
+        vector<std::string> A;
+        A.reserve(NELEM_STR);
+        std::mt19937 rng(123);
+        for (int i = 0; i < NELEM_STR; ++i) {
+            std::string s(8, ' ');
+            for (int j = 0; j < 8; ++j)
+                s[j] = charset[rng() % 26];
+            A.push_back(s);
+        }
+        std::sort(A.begin(), A.end());
+        std::mt19937 rng2(42);
+        const int nswaps = static_cast<int>(NELEM_STR * 0.05);
+        for (int k = 0; k < nswaps; ++k) {
+            int idx = static_cast<int>(rng2() % (NELEM_STR - 1));
+            std::swap(A[idx], A[idx + 1]);
+        }
+        cout << "nearly-sorted       |";
+        TestTimsortStr(A);
+    }
+
+    // pipe-organ: ascending first half, descending second half
+    {
+        vector<std::string> sorted_base;
+        sorted_base.reserve(NELEM_STR);
+        std::mt19937 rng(123);
+        for (int i = 0; i < NELEM_STR; ++i) {
+            std::string s(8, ' ');
+            for (int j = 0; j < 8; ++j)
+                s[j] = charset[rng() % 26];
+            sorted_base.push_back(s);
+        }
+        std::sort(sorted_base.begin(), sorted_base.end());
+        const int half = NELEM_STR / 2;
+        vector<std::string> A;
+        A.reserve(NELEM_STR);
+        for (int i = 0; i < half; ++i)
+            A.push_back(sorted_base[i]);
+        for (int i = half - 1; i >= 0; --i)
+            A.push_back(sorted_base[i]);
+        cout << "pipe-organ          |";
+        TestTimsortStr(A);
+    }
+
+    cout << "--------------------+------+------+------+------+\n";
+    cout << endl;
+}
 
